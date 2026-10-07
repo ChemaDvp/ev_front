@@ -62,14 +62,14 @@ function AppShell({ children }) {
 
 export default function App() {
   if (!isSupabaseConfigured) {
+    const configurationHelp = import.meta.env.PROD
+      ? 'Las variables VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY no se incluyeron en el build de GitHub Actions. Añádelas en la configuración del repositorio y vuelve a ejecutar el despliegue.'
+      : 'Crea `.env.local` a partir de `.env.example`, añade la URL y la clave pública de Supabase y reinicia el servidor de desarrollo.';
     return (
       <div className="flex min-h-screen items-center justify-center bg-paper px-5">
         <div className="max-w-md rounded-3xl bg-white p-6 shadow-card">
           <h1 className="text-xl font-semibold text-ink">Configura la conexión</h1>
-          <p className="mt-2 text-sm text-muted">
-            Crea `.env.local` a partir de `.env.example`, añade la URL y la clave pública de Supabase
-            y reinicia el servidor de desarrollo.
-          </p>
+          <p className="mt-2 text-sm text-muted">{configurationHelp}</p>
         </div>
       </div>
     );

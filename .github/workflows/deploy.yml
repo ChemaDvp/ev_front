@@ -24,6 +24,19 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Validate Supabase build configuration
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ]; then
+            echo "::error::Missing Actions variable VITE_SUPABASE_URL. Add it under repository Settings > Secrets and variables > Actions > Variables."
+            exit 1
+          fi
+          if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Missing Actions variable VITE_SUPABASE_PUBLISHABLE_KEY. Add it under repository Settings > Secrets and variables > Actions > Variables."
+            exit 1
+          fi
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}

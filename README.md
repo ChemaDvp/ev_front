@@ -38,7 +38,7 @@ Para habilitar el acceso de invitado sin autenticación en el proyecto existente
 
 ### Despliegue en GitHub Pages
 
-El workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) compila y publica al hacer push a `main`. En **Settings → Secrets and variables → Actions → Variables**, crea `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`. Después, activa **Settings → Pages → Build and deployment → Source: GitHub Actions**. En la primera publicación configura también la URL de Pages en la allowlist de Supabase.
+El workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) compila y publica al hacer push a `main`. En **Settings → Secrets and variables → Actions → Variables** del repositorio (no en los ajustes de un Environment), crea exactamente `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`. Después, activa **Settings → Pages → Build and deployment → Source: GitHub Actions**. En la primera publicación configura también la URL de Pages en la allowlist de Supabase. El workflow verifica que las dos variables existan antes de compilar, para no publicar una página sin conexión.
 
 ## Esquema de Supabase
 
