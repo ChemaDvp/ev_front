@@ -1,0 +1,248 @@
+create extension if not exists pgcrypto;
+
+do $$
+begin
+  create type public.app_role as enum ('admin', 'worker');
+exception
+  when duplicate_object then null;
+end
+$$;
+
+do $$
+begin
+  create type public.event_item_category as enum ('material', 'decoration');
+exception
+  when duplicate_object then null;
+end
+$$;
+
+create table if not exists public.profiles (
+  id uuid primary key references auth.users (id) on delete cascade,
+  role public.app_role not null default 'worker',
+  display_name text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.events (
+  id uuid primary key default gen_random_uuid(),
+  event_type text not null,
+  location text not null,
+  event_date date not null,
+  start_time time not null,
+  end_time time not null,
+  notes text not null default '',
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.workers (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid unique references auth.users (id) on delete set null,
+  name text not null,
+  email text,
+  phone text,
+  notes text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.event_workers (
+  event_id uuid not null references public.events (id) on delete cascade,
+  worker_id uuid not null references public.workers (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (event_id, worker_id)
+);
+
+create table if not exists public.event_items (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references public.events (id) on delete cascade,
+  category public.event_item_category not null,
+  name text not null,
+  quantity numeric(10, 2) not null default 1 check (quantity > 0),
+  unit text not null default 'unidad',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Preparada para habilitar el módulo de stock en una fase futura.
+create table if not exists public.stock_items (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  category text not null,
+  quantity numeric(10, 2) not null default 0 check (quantity >= 0),
+  unit text not null default 'unidad',
+  minimum_quantity numeric(10, 2) not null default 0 check (minimum_quantity >= 0),
+  notes text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists events_event_date_idx
+  on public.events (event_date);
+create index if not exists event_workers_worker_id_idx
+  on public.event_workers (worker_id);
+create index if not exists event_items_event_id_idx
+  on public.event_items (event_id);
+
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.profiles (id, display_name)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'display_name', new.email, 'Usuario')
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = (select auth.uid())
+      and p.role = 'admin'::public.app_role
+  );
+$$;
+
+create or replace function public.can_view_event(target_event_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.is_admin()
+    or exists (
+      select 1
+      from public.event_workers ew
+      join public.workers w on w.id = ew.worker_id
+      where ew.event_id = target_event_id
+        and w.user_id = (select auth.uid())
+    );
+$$;
+
+revoke all on function public.handle_new_user() from public, anon, authenticated;
+revoke all on function public.is_admin() from public, anon;
+revoke all on function public.can_view_event(uuid) from public, anon;
+grant execute on function public.is_admin() to authenticated;
+grant execute on function public.can_view_event(uuid) to authenticated;
+
+drop trigger if exists set_events_updated_at on public.events;
+create trigger set_events_updated_at before update on public.events
+  for each row execute function public.set_updated_at();
+drop trigger if exists set_workers_updated_at on public.workers;
+create trigger set_workers_updated_at before update on public.workers
+  for each row execute function public.set_updated_at();
+drop trigger if exists set_event_items_updated_at on public.event_items;
+create trigger set_event_items_updated_at before update on public.event_items
+  for each row execute function public.set_updated_at();
+drop trigger if exists set_stock_items_updated_at on public.stock_items;
+create trigger set_stock_items_updated_at before update on public.stock_items
+  for each row execute function public.set_updated_at();
+
+alter table public.profiles enable row level security;
+alter table public.events enable row level security;
+alter table public.workers enable row level security;
+alter table public.event_workers enable row level security;
+alter table public.event_items enable row level security;
+alter table public.stock_items enable row level security;
+
+drop policy if exists "Users can read their own profile or admins can read all"
+  on public.profiles;
+create policy "Users can read their own profile or admins can read all"
+  on public.profiles for select to authenticated
+  using (id = (select auth.uid()) or (select public.is_admin()));
+
+drop policy if exists "Admins can manage events" on public.events;
+create policy "Admins can manage events"
+  on public.events for all to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+drop policy if exists "Assigned workers can read events" on public.events;
+create policy "Assigned workers can read events"
+  on public.events for select to authenticated
+  using ((select public.can_view_event(id)));
+
+drop policy if exists "Admins can manage workers" on public.workers;
+create policy "Admins can manage workers"
+  on public.workers for all to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+drop policy if exists "Workers can read coworkers on shared events" on public.workers;
+create policy "Workers can read coworkers on shared events"
+  on public.workers for select to authenticated
+  using (
+    exists (
+      select 1
+      from public.event_workers visible_assignment
+      where visible_assignment.worker_id = workers.id
+        and (select public.can_view_event(visible_assignment.event_id))
+    )
+  );
+
+drop policy if exists "Admins can manage event workers" on public.event_workers;
+create policy "Admins can manage event workers"
+  on public.event_workers for all to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+drop policy if exists "Assigned workers can read event workers" on public.event_workers;
+create policy "Assigned workers can read event workers"
+  on public.event_workers for select to authenticated
+  using ((select public.can_view_event(event_id)));
+
+drop policy if exists "Admins can manage event items" on public.event_items;
+create policy "Admins can manage event items"
+  on public.event_items for all to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+drop policy if exists "Assigned workers can read event items" on public.event_items;
+create policy "Assigned workers can read event items"
+  on public.event_items for select to authenticated
+  using ((select public.can_view_event(event_id)));
+
+drop policy if exists "Admins can manage stock items" on public.stock_items;
+create policy "Admins can manage stock items"
+  on public.stock_items for all to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
+
+grant usage on schema public to authenticated;
+grant usage on type public.app_role, public.event_item_category to authenticated;
+grant select on public.profiles to authenticated;
+grant select, insert, update, delete on
+  public.events, public.workers, public.event_workers, public.event_items, public.stock_items
+  to authenticated;
+
+-- Ejecuta manualmente en el SQL Editor tras registrar la cuenta propietaria:
+-- update public.profiles
+-- set role = 'admin'
+-- where id = (select id from auth.users where email = 'admin@tuempresa.com');

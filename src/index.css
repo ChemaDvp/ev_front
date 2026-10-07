@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #20241f;
+  --color-olive: #59634a;
+  --color-paper: #f8f7f4;
+  --color-muted: #777a72;
+  --shadow-card: 0 8px 28px rgba(32, 36, 31, 0.06);
+}
+
+@layer base {
+  body {
+    @apply bg-paper font-sans antialiased text-ink;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .field {
+    @apply block min-h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 text-base text-ink outline-none transition focus:border-olive focus:ring-2 focus:ring-olive/20;
+  }
+
+  .button-primary {
+    @apply flex min-h-12 w-full items-center justify-center rounded-2xl bg-olive px-5 text-sm font-semibold text-white transition hover:bg-ink disabled:cursor-wait disabled:opacity-60;
+  }
+
+  .button-secondary {
+    @apply inline-flex min-h-10 items-center justify-center rounded-xl bg-paper px-4 text-sm font-medium text-olive transition hover:bg-stone-100;
+  }
+
+  .form-card {
+    @apply rounded-3xl bg-white p-5 shadow-card;
+  }
+}
+@layer base {
+  body {
+    @apply bg-paper font-sans antialiased text-ink;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .field {
+    @apply block min-h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 text-base text-ink outline-none transition focus:border-olive focus:ring-2 focus:ring-olive/20;
+  }
+
+  .button-primary {
+    @apply flex min-h-12 w-full items-center justify-center rounded-2xl bg-olive px-5 text-sm font-semibold text-white transition hover:bg-ink disabled:cursor-wait disabled:opacity-60;
+  }
+}

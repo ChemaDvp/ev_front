@@ -1,0 +1,2 @@
+[functions.invite-worker]
+verify_jwt = true
