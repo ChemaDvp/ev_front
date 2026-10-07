@@ -38,11 +38,7 @@ create table if not exists public.events (
 
 create table if not exists public.workers (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid unique references auth.users (id) on delete set null,
   name text not null,
-  email text,
-  phone text,
-  notes text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -133,28 +129,26 @@ as $$
   );
 $$;
 
-create or replace function public.can_view_event(target_event_id uuid)
+create or replace function public.is_worker()
 returns boolean
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select public.is_admin()
-    or exists (
-      select 1
-      from public.event_workers ew
-      join public.workers w on w.id = ew.worker_id
-      where ew.event_id = target_event_id
-        and w.user_id = (select auth.uid())
-    );
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = (select auth.uid())
+      and p.role = 'worker'::public.app_role
+  );
 $$;
 
 revoke all on function public.handle_new_user() from public, anon, authenticated;
 revoke all on function public.is_admin() from public, anon;
-revoke all on function public.can_view_event(uuid) from public, anon;
+revoke all on function public.is_worker() from public, anon;
 grant execute on function public.is_admin() to authenticated;
-grant execute on function public.can_view_event(uuid) to authenticated;
+grant execute on function public.is_worker() to authenticated;
 
 drop trigger if exists set_events_updated_at on public.events;
 create trigger set_events_updated_at before update on public.events
@@ -188,9 +182,10 @@ create policy "Admins can manage events"
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
 drop policy if exists "Assigned workers can read events" on public.events;
-create policy "Assigned workers can read events"
+drop policy if exists "Authenticated workers can read all events" on public.events;
+create policy "Authenticated workers can read all events"
   on public.events for select to authenticated
-  using ((select public.can_view_event(id)));
+  using ((select public.is_worker()));
 
 drop policy if exists "Admins can manage workers" on public.workers;
 create policy "Admins can manage workers"
@@ -198,16 +193,10 @@ create policy "Admins can manage workers"
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
 drop policy if exists "Workers can read coworkers on shared events" on public.workers;
-create policy "Workers can read coworkers on shared events"
+drop policy if exists "Workers can read workers for all events" on public.workers;
+create policy "Workers can read workers for all events"
   on public.workers for select to authenticated
-  using (
-    exists (
-      select 1
-      from public.event_workers visible_assignment
-      where visible_assignment.worker_id = workers.id
-        and (select public.can_view_event(visible_assignment.event_id))
-    )
-  );
+  using ((select public.is_worker()));
 
 drop policy if exists "Admins can manage event workers" on public.event_workers;
 create policy "Admins can manage event workers"
@@ -215,9 +204,10 @@ create policy "Admins can manage event workers"
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
 drop policy if exists "Assigned workers can read event workers" on public.event_workers;
-create policy "Assigned workers can read event workers"
+drop policy if exists "Workers can read assignments for all events" on public.event_workers;
+create policy "Workers can read assignments for all events"
   on public.event_workers for select to authenticated
-  using ((select public.can_view_event(event_id)));
+  using ((select public.is_worker()));
 
 drop policy if exists "Admins can manage event items" on public.event_items;
 create policy "Admins can manage event items"
@@ -225,9 +215,10 @@ create policy "Admins can manage event items"
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
 drop policy if exists "Assigned workers can read event items" on public.event_items;
-create policy "Assigned workers can read event items"
+drop policy if exists "Workers can read items for all events" on public.event_items;
+create policy "Workers can read items for all events"
   on public.event_items for select to authenticated
-  using ((select public.can_view_event(event_id)));
+  using ((select public.is_worker()));
 
 drop policy if exists "Admins can manage stock items" on public.stock_items;
 create policy "Admins can manage stock items"
@@ -239,8 +230,9 @@ grant usage on schema public to authenticated;
 grant usage on type public.app_role, public.event_item_category to authenticated;
 grant select on public.profiles to authenticated;
 grant select, insert, update, delete on
-  public.events, public.workers, public.event_workers, public.event_items, public.stock_items
+  public.events, public.event_workers, public.event_items, public.stock_items
   to authenticated;
+grant select (id, name), insert, update, delete on public.workers to authenticated;
 
 -- Ejecuta manualmente en el SQL Editor tras registrar la cuenta propietaria:
 -- update public.profiles

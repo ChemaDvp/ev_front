@@ -47,7 +47,7 @@ export default function EventsPage() {
         <div className="rounded-3xl bg-white p-6 text-center shadow-card">
           <p className="font-medium text-ink">Todavía no hay eventos</p>
           <p className="mt-1 text-sm text-muted">
-            {role === 'admin' ? 'Cuando crees uno, aparecerá aquí.' : 'No tienes eventos asignados.'}
+            {role === 'admin' ? 'Cuando crees uno, aparecerá aquí.' : 'No hay eventos disponibles.'}
           </p>
         </div>
       )}

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { deleteWorker, getWorkers, inviteWorker, saveWorker } from '../services/workersService.js';
+import { deleteWorker, getWorkers, saveWorker } from '../services/workersService.js';
 
-const blankWorker = { name: '', email: '', phone: '', notes: '' };
+const blankWorker = { name: '' };
 
 export default function WorkersPage() {
   const [workers, setWorkers] = useState([]);
@@ -28,7 +27,7 @@ export default function WorkersPage() {
 
   function startEdit(worker) {
     setEditingId(worker.id);
-    setForm({ name: worker.name, email: worker.email || '', phone: worker.phone || '', notes: worker.notes || '' });
+    setForm({ name: worker.name });
     setNotice('');
   }
 
@@ -43,30 +42,14 @@ export default function WorkersPage() {
     setError('');
     setNotice('');
     try {
-      await saveWorker(editingId, {
-        ...form,
-        email: form.email.trim() || null,
-        phone: form.phone.trim() || null,
-      });
+      await saveWorker(editingId, { name: form.name.trim() });
       resetForm();
       await refresh();
-      setNotice(editingId ? 'Trabajador actualizado.' : 'Trabajador creado. Puedes enviarle una invitación para activar su acceso.');
+      setNotice(editingId ? 'Trabajador actualizado.' : 'Trabajador creado. Ya puedes asignarlo a uno o varios eventos.');
     } catch (saveError) {
       setError(`No se pudo guardar el trabajador: ${saveError.message}`);
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleInvite(worker) {
-    setError('');
-    setNotice('');
-    try {
-      await inviteWorker(worker.id);
-      await refresh();
-      setNotice(`Invitación enviada a ${worker.email}.`);
-    } catch (inviteError) {
-      setError(`No se pudo invitar a ${worker.name}: ${inviteError.message}. Comprueba que la función invite-worker está desplegada y configurada.`);
     }
   }
 
@@ -94,18 +77,6 @@ export default function WorkersPage() {
           Nombre
           <input className="field" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         </label>
-        <label className="block space-y-2 text-sm font-medium">
-          Correo electrónico
-          <input className="field" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        </label>
-        <label className="block space-y-2 text-sm font-medium">
-          Teléfono
-          <input className="field" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-        </label>
-        <label className="block space-y-2 text-sm font-medium">
-          Notas
-          <textarea className="field min-h-20 py-3" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-        </label>
         <div className="flex gap-2">
           <button className="button-primary" disabled={saving}>{saving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Añadir trabajador'}</button>
           {editingId && <button className="button-secondary" type="button" onClick={resetForm}>Cancelar</button>}
@@ -122,18 +93,11 @@ export default function WorkersPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="font-semibold">{worker.name}</h3>
-                <p className="mt-1 text-sm text-muted">{worker.email || 'Sin correo'}{worker.phone ? ` · ${worker.phone}` : ''}</p>
-                <p className="mt-2 text-xs text-olive">{worker.user_id ? 'Acceso activado' : 'Sin acceso a la app'}</p>
-                {worker.notes && <p className="mt-2 text-sm text-muted">{worker.notes}</p>}
               </div>
               <button className="text-sm font-medium text-olive" onClick={() => startEdit(worker)}>Editar</button>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              {worker.email && !worker.user_id && (
-                <button className="button-secondary" onClick={() => handleInvite(worker)}>Enviar invitación</button>
-              )}
               <button className="button-secondary text-red-700" onClick={() => handleDelete(worker)}>Eliminar</button>
-              <Link className="button-secondary" to="/events/new">Asignar a evento</Link>
             </div>
           </article>
         ))}

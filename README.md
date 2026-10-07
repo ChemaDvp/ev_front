@@ -27,23 +27,14 @@ La aplicación usa `HashRouter` y rutas de assets relativas para GitHub Pages.
 ## Funcionalidades disponibles
 
 - Autenticación con Supabase; el selector de administrador/trabajador comprueba el rol de perfil y no suplanta identidades.
-- Lista y detalle de eventos; la lectura queda limitada por las políticas RLS.
+- Los trabajadores con sesión pueden consultar la lista completa de eventos y sus detalles, independientemente de las asignaciones.
 - Creación, edición y eliminación de eventos con trabajadores, material, decoración y notas.
-- Gestión de trabajadores y flujo de invitación segura por correo.
+- Gestión de trabajadores y asignación N:M a eventos por parte del administrador.
 - Stock permanece oculto de la navegación y deshabilitado como módulo futuro.
 
 Al editar un evento, las asignaciones y elementos se guardan en una transacción PostgreSQL mediante una función RPC. Como el esquema inicial ya está aplicado en tu proyecto, ejecuta también [`supabase/migrations/20261007000000_save_event_rpc.sql`](supabase/migrations/20261007000000_save_event_rpc.sql) en SQL Editor antes de usar los formularios.
 
-### Invitaciones de trabajadores
-
-La clave `service_role` nunca se expone al navegador. La invitación usa la función Edge `invite-worker`, que verifica el JWT y el rol admin antes de crear una cuenta Auth y vincularla al trabajador.
-
-1. Instala Supabase CLI y vincula el proyecto (`supabase login` y `supabase link --project-ref TU_PROJECT_REF`).
-2. Despliega desde la raíz del repositorio: `supabase functions deploy invite-worker`.
-3. En Supabase, configura **Authentication → URL Configuration** con la URL local `http://localhost:5173/` y la URL GitHub Pages como Redirect URL permitida. En producción la función puede configurarse con `supabase secrets set INVITE_REDIRECT_URL=https://USUARIO.github.io/REPOSITORIO/`.
-4. En **Authentication → SMTP Settings**, configura SMTP propio antes de enviar invitaciones a usuarios reales; el servicio de correo por defecto de Supabase es limitado para pruebas.
-
-Las variables `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` las proporciona el runtime de Supabase Edge Functions. No las copies a `.env.local` ni a GitHub.
+Para actualizar el acceso de los trabajadores en el proyecto existente, ejecuta [`supabase/migrations/20261007010000_workers_read_all_events.sql`](supabase/migrations/20261007010000_workers_read_all_events.sql) en SQL Editor. Esto deja que todo perfil `worker` autenticado lea todos los eventos y detalles; las asignaciones solo identifican qué trabajadores organiza el administrador para cada evento. La migración conserva los datos existentes de contacto, pero los trabajadores solo pueden leer los nombres del equipo.
 
 ### Despliegue en GitHub Pages
 
@@ -55,7 +46,7 @@ Ejecuta [`supabase/schema.sql`](supabase/schema.sql) en el SQL Editor de Supabas
 
 Las cuentas nuevas reciben el rol `worker` por defecto. Después de registrar la cuenta propietaria, promuévela a administradora ejecutando el `UPDATE` comentado al final del script con su correo real. No permitas que el cliente cree o cambie roles: el rol debe administrarse desde un entorno confiable.
 
-El acceso de trabajador requiere una cuenta autenticada asociada al trabajador mediante `workers.user_id`; solo podrá leer los eventos a los que esté asignado. La navegación del frontend oculta las pantallas de administración, pero RLS aplica también la autorización en la base de datos.
+Los trabajadores necesitan iniciar sesión con una cuenta de Supabase Auth cuyo perfil tenga el rol `worker`. El registro de equipo que crea el administrador es para organizar las asignaciones; no crea credenciales de inicio de sesión. Crea las cuentas de acceso desde **Authentication → Users** y mantén desactivados los registros públicos: cada cuenta nueva recibe el rol `worker` y puede consultar todos los eventos, nombres de trabajadores asignados, material y decoración. Solo el administrador puede crear/editar eventos, gestionar trabajadores o asignaciones.
 
 ## Estructura React propuesta
 
@@ -81,8 +72,9 @@ src/
 ├── App.jsx
 └── main.jsx
 supabase/
-├── functions/invite-worker/index.ts
-├── migrations/20261007000000_save_event_rpc.sql
+├── migrations/
+│   ├── 20261007000000_save_event_rpc.sql
+│   └── 20261007010000_workers_read_all_events.sql
 └── schema.sql
 ```
 

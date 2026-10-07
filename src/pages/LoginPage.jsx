@@ -53,7 +53,7 @@ export default function LoginPage() {
         <div className="mb-8">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-olive">Eventos Vidal</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink">Bienvenido</h1>
-          <p className="mt-2 text-sm text-muted">Accede a la gestión de eventos.</p>
+          <p className="mt-2 text-sm text-muted">Consulta los eventos o gestiona la organización.</p>
         </div>
         {!isSupabaseConfigured ? (
           <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
