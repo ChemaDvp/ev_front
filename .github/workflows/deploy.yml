@@ -27,20 +27,20 @@ jobs:
       - name: Validate Supabase build configuration
         run: |
           if [ -z "$VITE_SUPABASE_URL" ]; then
-            echo "::error::Missing Actions variable VITE_SUPABASE_URL. Add it under repository Settings > Secrets and variables > Actions > Variables."
+            echo "::error::Missing VITE_SUPABASE_URL. Add it under repository Settings > Secrets and variables > Actions as a repository variable or secret."
             exit 1
           fi
           if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
-            echo "::error::Missing Actions variable VITE_SUPABASE_PUBLISHABLE_KEY. Add it under repository Settings > Secrets and variables > Actions > Variables."
+            echo "::error::Missing VITE_SUPABASE_PUBLISHABLE_KEY. Add it under repository Settings > Secrets and variables > Actions as a repository variable or secret."
             exit 1
           fi
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
