@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient.js';
 export async function getWorkers() {
   const { data, error } = await supabase
     .from('workers')
-    .select('id, name, created_at')
+    .select('id, name')
     .order('name');
   if (error) throw error;
   return data;

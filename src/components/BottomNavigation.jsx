@@ -22,6 +22,19 @@ export default function BottomNavigation({ role }) {
             {label}
           </NavLink>
         ))}
+        {role === 'admin' && (
+          <button
+            className="flex min-w-24 cursor-not-allowed flex-col items-center gap-1 px-3 py-1 text-xs font-medium text-stone-400"
+            type="button"
+            disabled
+            aria-label="Stock, próximamente"
+            title="Próximamente"
+          >
+            <span className="text-xl leading-6" aria-hidden="true">▤</span>
+            <span>Stock</span>
+            <span className="text-[10px] leading-3">Próximamente</span>
+          </button>
+        )}
       </div>
     </nav>
   );

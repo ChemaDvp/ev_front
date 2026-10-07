@@ -30,7 +30,7 @@ La aplicación usa `HashRouter` y rutas de assets relativas para GitHub Pages.
 - El administrador inicia sesión con correo y contraseña; el botón **Entrar como invitado** permite consultar la lista completa y el detalle sin credenciales.
 - Creación, edición y eliminación de eventos con trabajadores, material, decoración y notas.
 - Gestión de trabajadores y asignación N:M a eventos por parte del administrador.
-- Stock permanece oculto de la navegación y deshabilitado como módulo futuro.
+- Stock aparece deshabilitado en la navegación de administración con el aviso «Próximamente».
 
 Al editar un evento, las asignaciones y elementos se guardan en una transacción PostgreSQL mediante una función RPC. Como el esquema inicial ya está aplicado en tu proyecto, ejecuta también [`supabase/migrations/20261007000000_save_event_rpc.sql`](supabase/migrations/20261007000000_save_event_rpc.sql) en SQL Editor antes de usar los formularios.
 
@@ -78,4 +78,4 @@ supabase/
 └── schema.sql
 ```
 
-Las rutas `/events/new`, `/events/:id/edit`, `/workers` y `/stock` están protegidas para administradores; un invitado que acceda directamente recibe `No tienes permiso para poder visualizar esta información`. Stock no aparece en la navegación.
+Las rutas `/events/new`, `/events/:id/edit`, `/workers` y `/stock` están protegidas para administradores; un invitado que acceda directamente recibe `No tienes permiso para poder visualizar esta información`. Stock aparece como opción deshabilitada «Próximamente» en la navegación del administrador.

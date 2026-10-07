@@ -21,6 +21,8 @@ export default function EventFormPage() {
   });
   const [workerIds, setWorkerIds] = useState([]);
   const [items, setItems] = useState([]);
+  const [eventLoaded, setEventLoaded] = useState(!id);
+  const [workerLoadError, setWorkerLoadError] = useState('');
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -29,28 +31,39 @@ export default function EventFormPage() {
     let active = true;
     async function load() {
       try {
-        const availableWorkers = await getWorkers();
+        const [workersResult, eventResult] = await Promise.allSettled([
+          getWorkers(),
+          id ? getEvent(id) : Promise.resolve(null),
+        ]);
         if (!active) return;
-        setWorkers(availableWorkers);
+
+        if (workersResult.status === 'fulfilled') {
+          setWorkers(workersResult.value);
+        } else {
+          setWorkerLoadError(`No se pudieron cargar los trabajadores: ${workersResult.reason.message}`);
+        }
+
         if (id) {
-          const result = await getEvent(id);
-          if (!active) return;
-          if (!result.event) {
+          if (eventResult.status === 'rejected') {
+            setError(`No se pudo cargar el evento: ${eventResult.reason.message}`);
+          } else if (!eventResult.value.event) {
             setError('No se encontró el evento solicitado.');
-            return;
+          } else {
+            const result = eventResult.value;
+            setForm({
+              event_type: result.event.event_type,
+              location: result.event.location,
+              event_date: result.event.event_date,
+              start_time: result.event.start_time.slice(0, 5),
+              end_time: result.event.end_time.slice(0, 5),
+              notes: result.event.notes || '',
+            });
+            setWorkerIds(result.workers.map((worker) => worker.id));
+            setItems(result.items.map(({ category, name, quantity, unit }) => ({
+              category, name, quantity: String(quantity), unit,
+            })));
+            setEventLoaded(true);
           }
-          setForm({
-            event_type: result.event.event_type,
-            location: result.event.location,
-            event_date: result.event.event_date,
-            start_time: result.event.start_time.slice(0, 5),
-            end_time: result.event.end_time.slice(0, 5),
-            notes: result.event.notes || '',
-          });
-          setWorkerIds(result.workers.map((worker) => worker.id));
-          setItems(result.items.map(({ category, name, quantity, unit }) => ({
-            category, name, quantity: String(quantity), unit,
-          })));
         }
       } catch (loadError) {
         if (active) setError(`No se pudo cargar el formulario: ${loadError.message}`);
@@ -87,6 +100,18 @@ export default function EventFormPage() {
   }
 
   if (loading) return <p className="py-8 text-center text-muted">Cargando formulario...</p>;
+  if (id && !eventLoaded) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-4">
+        <Link className="inline-flex py-2 text-sm font-medium text-olive" to={`/events/${id}`}>
+          ← Volver al evento
+        </Link>
+        <p className="rounded-2xl bg-red-50 p-4 text-sm text-red-800">
+          {error || 'No se pudieron cargar los datos del evento.'}
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="mx-auto max-w-2xl">
       <Link className="inline-flex py-2 text-sm font-medium text-olive" to={id ? `/events/${id}` : '/events'}>
@@ -160,8 +185,14 @@ export default function EventFormPage() {
             <textarea className="field min-h-28 py-3" value={form.notes} onChange={(e) => updateForm('notes', e.target.value)} />
           </Field>
         </section>
-        {error && <p className="rounded-2xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
-        <button className="button-primary" disabled={saving}>{saving ? 'Guardando...' : 'Guardar evento'}</button>
+        {(error || workerLoadError) && (
+          <p className="rounded-2xl bg-red-50 p-4 text-sm text-red-800">
+            {[error, workerLoadError].filter(Boolean).join(' ')}
+          </p>
+        )}
+        <button className="button-primary" disabled={saving || Boolean(workerLoadError)}>
+          {saving ? 'Guardando...' : 'Guardar evento'}
+        </button>
       </form>
     </div>
   );
