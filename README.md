@@ -44,7 +44,7 @@ El workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) compi
 
 Ejecuta [`supabase/schema.sql`](supabase/schema.sql) en el SQL Editor de Supabase. El esquema crea perfiles vinculados a Supabase Auth, eventos, trabajadores, asignaciones N:M, material/decoración por evento y la tabla de stock preparada para una futura activación.
 
-Las cuentas nuevas reciben el rol `worker` por defecto. Después de registrar la cuenta propietaria, promuévela a administradora ejecutando el `UPDATE` comentado al final del script con su correo real. No permitas que el cliente cree o cambie roles: el rol debe administrarse desde un entorno confiable.
+El perfil del administrador debe tener rol `admin`; promueve la cuenta propietaria ejecutando el `UPDATE` comentado al final del script con su correo real. El alta de trabajadores en la app solo crea nombres para las asignaciones y no crea cuentas Auth.
 
 El acceso de invitados no usa una cuenta de Auth ni crea una sesión: navega como rol `anon` y solo puede leer los campos permitidos por RLS. El equipo que crea el administrador solo organiza las asignaciones a eventos. El login con correo y contraseña queda reservado al administrador.
 
@@ -78,4 +78,4 @@ supabase/
 └── schema.sql
 ```
 
-Las rutas `/events/new`, `/events/:id/edit`, `/workers` y `/stock` están protegidas para administradores; un trabajador que acceda directamente recibe `No tienes permiso para poder visualizar esta información`. Stock no aparece en la navegación.
+Las rutas `/events/new`, `/events/:id/edit`, `/workers` y `/stock` están protegidas para administradores; un invitado que acceda directamente recibe `No tienes permiso para poder visualizar esta información`. Stock no aparece en la navegación.
