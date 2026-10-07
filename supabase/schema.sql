@@ -129,26 +129,9 @@ as $$
   );
 $$;
 
-create or replace function public.is_worker()
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select exists (
-    select 1
-    from public.profiles p
-    where p.id = (select auth.uid())
-      and p.role = 'worker'::public.app_role
-  );
-$$;
-
 revoke all on function public.handle_new_user() from public, anon, authenticated;
 revoke all on function public.is_admin() from public, anon;
-revoke all on function public.is_worker() from public, anon;
 grant execute on function public.is_admin() to authenticated;
-grant execute on function public.is_worker() to authenticated;
 
 drop trigger if exists set_events_updated_at on public.events;
 create trigger set_events_updated_at before update on public.events
@@ -181,44 +164,38 @@ create policy "Admins can manage events"
   on public.events for all to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
-drop policy if exists "Assigned workers can read events" on public.events;
-drop policy if exists "Authenticated workers can read all events" on public.events;
-create policy "Authenticated workers can read all events"
-  on public.events for select to authenticated
-  using ((select public.is_worker()));
-
 drop policy if exists "Admins can manage workers" on public.workers;
 create policy "Admins can manage workers"
   on public.workers for all to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
-drop policy if exists "Workers can read coworkers on shared events" on public.workers;
-drop policy if exists "Workers can read workers for all events" on public.workers;
-create policy "Workers can read workers for all events"
-  on public.workers for select to authenticated
-  using ((select public.is_worker()));
-
 drop policy if exists "Admins can manage event workers" on public.event_workers;
 create policy "Admins can manage event workers"
   on public.event_workers for all to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
-drop policy if exists "Assigned workers can read event workers" on public.event_workers;
-drop policy if exists "Workers can read assignments for all events" on public.event_workers;
-create policy "Workers can read assignments for all events"
-  on public.event_workers for select to authenticated
-  using ((select public.is_worker()));
 
 drop policy if exists "Admins can manage event items" on public.event_items;
 create policy "Admins can manage event items"
   on public.event_items for all to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
-drop policy if exists "Assigned workers can read event items" on public.event_items;
-drop policy if exists "Workers can read items for all events" on public.event_items;
-create policy "Workers can read items for all events"
-  on public.event_items for select to authenticated
-  using ((select public.is_worker()));
+drop policy if exists "Guests can read all events" on public.events;
+create policy "Guests can read all events"
+  on public.events for select to anon
+  using (true);
+drop policy if exists "Guests can read event assignments" on public.event_workers;
+create policy "Guests can read event assignments"
+  on public.event_workers for select to anon
+  using (true);
+drop policy if exists "Guests can read worker names" on public.workers;
+create policy "Guests can read worker names"
+  on public.workers for select to anon
+  using (true);
+drop policy if exists "Guests can read event items" on public.event_items;
+create policy "Guests can read event items"
+  on public.event_items for select to anon
+  using (true);
 
 drop policy if exists "Admins can manage stock items" on public.stock_items;
 create policy "Admins can manage stock items"
@@ -233,6 +210,14 @@ grant select, insert, update, delete on
   public.events, public.event_workers, public.event_items, public.stock_items
   to authenticated;
 grant select (id, name), insert, update, delete on public.workers to authenticated;
+grant usage on schema public to anon;
+revoke all on public.events, public.event_workers, public.workers, public.event_items
+  from public, anon;
+grant select (id, event_type, location, event_date, start_time, end_time, notes)
+  on public.events to anon;
+grant select (event_id, worker_id) on public.event_workers to anon;
+grant select (id, name) on public.workers to anon;
+grant select (id, event_id, category, name, quantity, unit) on public.event_items to anon;
 
 -- Ejecuta manualmente en el SQL Editor tras registrar la cuenta propietaria:
 -- update public.profiles

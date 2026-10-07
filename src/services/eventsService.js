@@ -12,7 +12,11 @@ export async function getEvents() {
 
 export async function getEvent(id) {
   const [eventResult, workersResult, itemsResult] = await Promise.all([
-    supabase.from('events').select('*').eq('id', id).maybeSingle(),
+    supabase
+      .from('events')
+      .select('id, event_type, location, event_date, start_time, end_time, notes')
+      .eq('id', id)
+      .maybeSingle(),
     supabase.from('event_workers').select('workers(id, name)').eq('event_id', id),
     supabase.from('event_items').select('id, category, name, quantity, unit').eq('event_id', id),
   ]);

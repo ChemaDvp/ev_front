@@ -12,11 +12,16 @@ import WorkersPage from './pages/WorkersPage.jsx';
 import { isSupabaseConfigured, supabase } from './services/supabaseClient.js';
 
 function AppShell({ children }) {
-  const { user, role, error } = useAuth();
+  const { user, role, isGuest, exitGuestMode, error } = useAuth();
   const navigate = useNavigate();
   const [signOutError, setSignOutError] = useState('');
 
   async function handleSignOut() {
+    if (isGuest) {
+      exitGuestMode();
+      navigate('/login', { replace: true });
+      return;
+    }
     try {
       const { error: authError } = await supabase.auth.signOut();
       if (authError) {
@@ -32,12 +37,14 @@ function AppShell({ children }) {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      {user && (
+      {(user || isGuest) && (
         <div className="mx-auto flex max-w-2xl items-center justify-between px-5 pt-4">
           <Link className="text-sm font-semibold text-olive" to="/events">EV</Link>
           <div className="flex items-center gap-3">
-            <span className="text-xs capitalize text-muted">{role || 'cargando perfil'}</span>
-            <button className="text-sm font-medium text-olive" onClick={handleSignOut}>Salir</button>
+            <span className="text-xs capitalize text-muted">{isGuest ? 'invitado' : role || 'cargando perfil'}</span>
+            <button className="text-sm font-medium text-olive" onClick={handleSignOut}>
+              {isGuest ? 'Salir' : 'Cerrar sesión'}
+            </button>
           </div>
         </div>
       )}
@@ -47,8 +54,8 @@ function AppShell({ children }) {
       {signOutError && (
         <p className="mx-auto mt-3 max-w-2xl rounded-xl bg-red-50 p-3 text-sm text-red-800">{signOutError}</p>
       )}
-      <main className={`px-5 pt-6 ${user ? 'pb-28' : 'pb-10'}`}>{children}</main>
-      {user && role && <BottomNavigation role={role} />}
+      <main className={`px-5 pt-6 ${user || isGuest ? 'pb-28' : 'pb-10'}`}>{children}</main>
+      {(user || isGuest) && <BottomNavigation role={role} />}
     </div>
   );
 }

@@ -2,10 +2,14 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { isSupabaseConfigured, supabase } from '../services/supabaseClient.js';
 
 const AuthContext = createContext(null);
+const GUEST_MODE_KEY = 'ev-front-guest-mode';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
+  const [isGuest, setIsGuest] = useState(
+    () => sessionStorage.getItem(GUEST_MODE_KEY) === 'true',
+  );
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [error, setError] = useState('');
 
@@ -72,7 +76,17 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const value = { user, role, loading, error };
+  function enterGuestMode() {
+    sessionStorage.setItem(GUEST_MODE_KEY, 'true');
+    setIsGuest(true);
+  }
+
+  function exitGuestMode() {
+    sessionStorage.removeItem(GUEST_MODE_KEY);
+    setIsGuest(false);
+  }
+
+  const value = { user, role, isGuest, enterGuestMode, exitGuestMode, loading, error };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
