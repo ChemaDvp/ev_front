@@ -35,12 +35,12 @@ La aplicación usa `HashRouter` y rutas de assets relativas para GitHub Pages.
 - El menú móvil usa iconos centrados con etiquetas accesibles.
 - Modo oscuro persistente con control en la barra superior.
 - Separación automática de eventos próximos y realizados en la pantalla de eventos, según la fecha y hora de finalización.
-- La pantalla de acceso identifica al desarrollador `chemadvp` y la versión `v1.3.0`.
+- La pantalla de acceso identifica al desarrollador `chemadvp` y la versión `v1.3.1`.
 - Stock aparece deshabilitado en la navegación de administración con el aviso «Próximamente».
 
 Al editar un evento, las asignaciones y elementos se guardan en una transacción PostgreSQL mediante una función RPC. Como el esquema inicial ya está aplicado en tu proyecto, ejecuta también [`supabase/migrations/20261007000000_save_event_rpc.sql`](supabase/migrations/20261007000000_save_event_rpc.sql) en SQL Editor antes de usar los formularios.
 
-En un proyecto Supabase aún sin esquema, ejecuta primero [`supabase/schema.sql`](supabase/schema.sql), después las migraciones `20261007000000_save_event_rpc.sql`, `20261007020000_guest_read_only_access.sql`, `20261008000000_catalog_items.sql`, `20261009000000_guest_catalog_item_read.sql`, `20261010000000_catalog_item_images.sql` y [`20261011000000_event_item_image_read.sql`](supabase/migrations/20261011000000_event_item_image_read.sql), en ese orden. En un proyecto existente, aplica las migraciones que aún no hayas ejecutado en el mismo orden. La migración `20261010000000_catalog_item_images.sql` configura el bucket privado para imágenes; la última concede lectura limitada de imágenes vinculadas a eventos para invitados.
+En un proyecto Supabase aún sin esquema, ejecuta primero [`supabase/schema.sql`](supabase/schema.sql), después las migraciones `20261007000000_save_event_rpc.sql`, `20261007020000_guest_read_only_access.sql`, `20261008000000_catalog_items.sql`, `20261009000000_guest_catalog_item_read.sql`, `20261010000000_catalog_item_images.sql`, `20261011000000_event_item_image_read.sql` y [`20261012000000_fix_event_item_image_access.sql`](supabase/migrations/20261012000000_fix_event_item_image_access.sql), en ese orden. En un proyecto existente, aplica las migraciones que aún no hayas ejecutado en el mismo orden. La migración `20261010000000_catalog_item_images.sql` configura el bucket privado; las dos últimas establecen la lectura limitada de imágenes vinculadas a eventos y corrigen la comprobación de permisos al generar URL firmadas.
 
 Para habilitar el acceso de invitado sin autenticación en el proyecto existente, ejecuta [`supabase/migrations/20261007020000_guest_read_only_access.sql`](supabase/migrations/20261007020000_guest_read_only_access.sql) en SQL Editor. Este acceso es público: cualquier persona que tenga la URL de la app puede leer los eventos y sus notas, el material/decoración y los nombres asignados. Las políticas y permisos SQL limitan al invitado a lectura; no puede crear ni editar datos. No incluyas notas privadas en los eventos.
 
@@ -89,6 +89,7 @@ supabase/
 │   ├── 20261009000000_guest_catalog_item_read.sql
 │   └── 20261010000000_catalog_item_images.sql
 │   ├── 20261011000000_event_item_image_read.sql
+│   └── 20261012000000_fix_event_item_image_access.sql
 └── schema.sql
 ```
 

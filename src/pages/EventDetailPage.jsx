@@ -19,6 +19,7 @@ export default function EventDetailPage() {
   const [event, setEvent] = useState(null);
   const [workers, setWorkers] = useState([]);
   const [items, setItems] = useState([]);
+  const [imageError, setImageError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -30,6 +31,7 @@ export default function EventDetailPage() {
         setEvent(result.event);
         setWorkers(result.workers);
         setItems(result.items);
+        setImageError(result.imageError);
       })
       .catch((loadError) => { if (active) setError(`No se pudo cargar el evento: ${loadError.message}`); })
       .finally(() => { if (active) setLoading(false); });
@@ -73,6 +75,11 @@ export default function EventDetailPage() {
       <DetailSection title="Trabajadores">
         {workers.length ? workers.map((worker) => <p key={worker.id}>{worker.name}</p>) : 'Sin trabajadores asignados'}
       </DetailSection>
+      {imageError && (
+        <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
+          No se pudieron cargar algunas imágenes: {imageError}
+        </p>
+      )}
       <DetailSection title="Material">
         {items.some((item) => item.category === 'material') ? (
           <ul className="space-y-2">

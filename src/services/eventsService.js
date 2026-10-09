@@ -30,9 +30,15 @@ export async function getEvent(id) {
   if (eventResult.error) throw eventResult.error;
   if (workersResult.error) throw workersResult.error;
   if (itemsResult.error) throw itemsResult.error;
-  const imageUrls = await getCatalogImageUrls(
-    itemsResult.data.map((item) => item.catalog_items?.image_path),
-  );
+  let imageUrls = new Map();
+  let imageError = '';
+  try {
+    imageUrls = await getCatalogImageUrls(
+      itemsResult.data.map((item) => item.catalog_items?.image_path),
+    );
+  } catch (error) {
+    imageError = error.message;
+  }
   return {
     event: eventResult.data,
     workers: workersResult.data.map(({ workers }) => workers).filter(Boolean),
@@ -40,6 +46,7 @@ export async function getEvent(id) {
       ...item,
       image_url: imageUrls.get(item.catalog_items?.image_path) || null,
     })),
+    imageError,
   };
 }
 

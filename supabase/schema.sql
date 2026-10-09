@@ -143,9 +143,44 @@ as $$
   );
 $$;
 
+create or replace function public.catalog_item_is_used_by_event(p_catalog_item_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.event_items as event_item
+    where event_item.catalog_item_id = p_catalog_item_id
+  );
+$$;
+
+create or replace function public.event_catalog_image_is_readable(p_object_name text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.catalog_items as catalog_item
+    join public.event_items as event_item
+      on event_item.catalog_item_id = catalog_item.id
+    where catalog_item.image_path = p_object_name
+      and p_object_name like catalog_item.id::text || '/%'
+  );
+$$;
+
 revoke all on function public.handle_new_user() from public, anon, authenticated;
 revoke all on function public.is_admin() from public, anon;
 grant execute on function public.is_admin() to authenticated;
+revoke all on function public.catalog_item_is_used_by_event(uuid) from public;
+revoke all on function public.event_catalog_image_is_readable(text) from public;
+grant execute on function public.catalog_item_is_used_by_event(uuid) to anon, authenticated;
+grant execute on function public.event_catalog_image_is_readable(text) to anon, authenticated;
 
 drop trigger if exists set_events_updated_at on public.events;
 create trigger set_events_updated_at before update on public.events
@@ -206,13 +241,7 @@ create policy "Admins can manage catalog items"
 drop policy if exists "Guests can read catalog items used by events" on public.catalog_items;
 create policy "Guests can read catalog items used by events"
   on public.catalog_items for select to anon
-  using (
-    exists (
-      select 1
-      from public.event_items
-      where event_items.catalog_item_id = catalog_items.id
-    )
-  );
+  using ((select public.catalog_item_is_used_by_event(id)));
 drop policy if exists "Guests can read all events" on public.events;
 create policy "Guests can read all events"
   on public.events for select to anon
@@ -262,12 +291,7 @@ create policy "Guests can read images used by events"
   on storage.objects for select to anon
   using (
     bucket_id = 'catalog-item-images'
-    and exists (
-      select 1
-      from public.catalog_items
-      where catalog_items.id::text = (storage.foldername(name))[1]
-        and catalog_items.image_path = name
-    )
+    and (select public.event_catalog_image_is_readable(name))
   );
 
 -- Ejecuta manualmente en el SQL Editor tras registrar la cuenta propietaria:
