@@ -77,8 +77,16 @@ export default function EventDetailPage() {
         {items.some((item) => item.category === 'material') ? (
           <ul className="space-y-2">
             {items.filter((item) => item.category === 'material').map((item) => (
-              <li key={item.id}>
-                {item.name} · {item.quantity} {item.unit}
+              <li className="flex items-center gap-3" key={item.id}>
+                {item.image_url && (
+                  <img
+                    className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                    src={item.image_url}
+                    alt={`Imagen de ${item.name}`}
+                    loading="lazy"
+                  />
+                )}
+                <span>{item.name} · {item.quantity} {item.unit}</span>
               </li>
             ))}
           </ul>
@@ -88,7 +96,17 @@ export default function EventDetailPage() {
         {items.some((item) => item.category === 'decoration') ? (
           <ul className="space-y-2">
             {items.filter((item) => item.category === 'decoration').map((item) => (
-              <li key={item.id}>{item.name} · {item.quantity} {item.unit}</li>
+              <li className="flex items-center gap-3" key={item.id}>
+                {item.image_url && (
+                  <img
+                    className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                    src={item.image_url}
+                    alt={`Imagen de ${item.name}`}
+                    loading="lazy"
+                  />
+                )}
+                <span>{item.name} · {item.quantity} {item.unit}</span>
+              </li>
             ))}
           </ul>
         ) : 'Sin decoración asignada'}

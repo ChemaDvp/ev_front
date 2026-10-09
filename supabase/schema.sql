@@ -203,6 +203,16 @@ create policy "Admins can manage catalog items"
   on public.catalog_items for all to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
+drop policy if exists "Guests can read catalog items used by events" on public.catalog_items;
+create policy "Guests can read catalog items used by events"
+  on public.catalog_items for select to anon
+  using (
+    exists (
+      select 1
+      from public.event_items
+      where event_items.catalog_item_id = catalog_items.id
+    )
+  );
 drop policy if exists "Guests can read all events" on public.events;
 create policy "Guests can read all events"
   on public.events for select to anon
@@ -243,6 +253,22 @@ grant select (event_id, worker_id) on public.event_workers to anon;
 grant select (id, name) on public.workers to anon;
 grant select (id, event_id, catalog_item_id, category, name, quantity, unit)
   on public.event_items to anon;
+grant select (id, image_path) on public.catalog_items to anon;
+grant usage on schema storage to anon;
+grant select on storage.objects to anon;
+
+drop policy if exists "Guests can read images used by events" on storage.objects;
+create policy "Guests can read images used by events"
+  on storage.objects for select to anon
+  using (
+    bucket_id = 'catalog-item-images'
+    and exists (
+      select 1
+      from public.catalog_items
+      where catalog_items.id::text = (storage.foldername(name))[1]
+        and catalog_items.image_path = name
+    )
+  );
 
 -- Ejecuta manualmente en el SQL Editor tras registrar la cuenta propietaria:
 -- update public.profiles

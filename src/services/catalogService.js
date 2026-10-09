@@ -4,6 +4,20 @@ const IMAGE_BUCKET = 'catalog-item-images';
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
 
+export async function getCatalogImageUrls(imagePaths) {
+  const paths = [...new Set(imagePaths.filter(Boolean))];
+  if (!paths.length) return new Map();
+
+  const { data, error } = await supabase.storage
+    .from(IMAGE_BUCKET)
+    .createSignedUrls(paths, 3600);
+  if (error) throw error;
+
+  const failedImage = data.find((image) => image.error);
+  if (failedImage) throw new Error(`No se pudo obtener una imagen del catálogo: ${failedImage.error}`);
+  return new Map(data.map((image) => [image.path, image.signedUrl]));
+}
+
 export async function getCatalogItems({ includeImages = false } = {}) {
   const { data, error } = await supabase
     .from('catalog_items')
@@ -15,14 +29,7 @@ export async function getCatalogItems({ includeImages = false } = {}) {
   const itemsWithImages = data.filter((item) => item.image_path);
   if (!includeImages || !itemsWithImages.length) return data;
 
-  const { data: signedImages, error: imageError } = await supabase.storage
-    .from(IMAGE_BUCKET)
-    .createSignedUrls(itemsWithImages.map((item) => item.image_path), 3600);
-  if (imageError) throw imageError;
-  const failedImage = signedImages.find((image) => image.error);
-  if (failedImage) throw new Error(`No se pudo obtener una imagen del catálogo: ${failedImage.error}`);
-
-  const imageUrls = new Map(signedImages.map((image) => [image.path, image.signedUrl]));
+  const imageUrls = await getCatalogImageUrls(itemsWithImages.map((item) => item.image_path));
   return data.map((item) => ({ ...item, image_url: imageUrls.get(item.image_path) || null }));
 }
 

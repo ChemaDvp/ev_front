@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+import { getCatalogImageUrls } from './catalogService.js';
 
 export async function getEvents() {
   const { data, error } = await supabase
@@ -21,15 +22,24 @@ export async function getEvent(id) {
       .eq('id', id)
       .maybeSingle(),
     supabase.from('event_workers').select('workers(id, name)').eq('event_id', id),
-    supabase.from('event_items').select('id, catalog_item_id, category, name, quantity, unit').eq('event_id', id),
+    supabase
+      .from('event_items')
+      .select('id, catalog_item_id, category, name, quantity, unit, catalog_items(id, image_path)')
+      .eq('event_id', id),
   ]);
   if (eventResult.error) throw eventResult.error;
   if (workersResult.error) throw workersResult.error;
   if (itemsResult.error) throw itemsResult.error;
+  const imageUrls = await getCatalogImageUrls(
+    itemsResult.data.map((item) => item.catalog_items?.image_path),
+  );
   return {
     event: eventResult.data,
     workers: workersResult.data.map(({ workers }) => workers).filter(Boolean),
-    items: itemsResult.data,
+    items: itemsResult.data.map((item) => ({
+      ...item,
+      image_url: imageUrls.get(item.catalog_items?.image_path) || null,
+    })),
   };
 }
 
