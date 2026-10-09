@@ -55,6 +55,7 @@ create table if not exists public.catalog_items (
   category public.event_item_category not null,
   name text not null,
   unit text not null default 'unidad',
+  image_path text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (category, name, unit)

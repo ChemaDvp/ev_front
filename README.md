@@ -31,13 +31,15 @@ La aplicación usa `HashRouter` y rutas de assets relativas para GitHub Pages.
 - Creación, edición y eliminación de eventos con trabajadores, material, decoración y notas.
 - Gestión de trabajadores y asignación N:M a eventos por parte del administrador.
 - Catálogo reutilizable de material y decoración; cada elemento se define por categoría y nombre, y su cantidad (de 1 a 99) se selecciona al asignarlo al evento.
+- El catálogo permite adjuntar imágenes privadas (máximo 5 MB), visibles solo en su listado para administradores.
+- El menú móvil usa iconos centrados con etiquetas accesibles.
 - Modo oscuro persistente con control en la barra superior.
-- La pantalla de acceso identifica al desarrollador `chemadvp` y la versión `v1.0.0`.
+- La pantalla de acceso identifica al desarrollador `chemadvp` y la versión `v1.1.0`.
 - Stock aparece deshabilitado en la navegación de administración con el aviso «Próximamente».
 
 Al editar un evento, las asignaciones y elementos se guardan en una transacción PostgreSQL mediante una función RPC. Como el esquema inicial ya está aplicado en tu proyecto, ejecuta también [`supabase/migrations/20261007000000_save_event_rpc.sql`](supabase/migrations/20261007000000_save_event_rpc.sql) en SQL Editor antes de usar los formularios.
 
-En un proyecto Supabase aún sin esquema, ejecuta primero [`supabase/schema.sql`](supabase/schema.sql), después [`supabase/migrations/20261007000000_save_event_rpc.sql`](supabase/migrations/20261007000000_save_event_rpc.sql), [`supabase/migrations/20261007020000_guest_read_only_access.sql`](supabase/migrations/20261007020000_guest_read_only_access.sql), [`supabase/migrations/20261008000000_catalog_items.sql`](supabase/migrations/20261008000000_catalog_items.sql) y [`supabase/migrations/20261009000000_guest_catalog_item_read.sql`](supabase/migrations/20261009000000_guest_catalog_item_read.sql). En un proyecto existente que ya tenga el esquema y migraciones anteriores, aplica las que aún no hayas ejecutado en ese mismo orden. La migración del catálogo conserva y añade al catálogo los elementos ya asociados a eventos. La última migración permite que el acceso de invitado lea la referencia del catálogo usada para mostrar el detalle de los eventos.
+En un proyecto Supabase aún sin esquema, ejecuta primero [`supabase/schema.sql`](supabase/schema.sql), después las migraciones `20261007000000_save_event_rpc.sql`, `20261007020000_guest_read_only_access.sql`, `20261008000000_catalog_items.sql`, `20261009000000_guest_catalog_item_read.sql` y [`20261010000000_catalog_item_images.sql`](supabase/migrations/20261010000000_catalog_item_images.sql), en ese orden. En un proyecto existente, aplica las migraciones que aún no hayas ejecutado en el mismo orden. La última migración configura el almacenamiento privado de imágenes de catálogo y sus permisos para administradores.
 
 Para habilitar el acceso de invitado sin autenticación en el proyecto existente, ejecuta [`supabase/migrations/20261007020000_guest_read_only_access.sql`](supabase/migrations/20261007020000_guest_read_only_access.sql) en SQL Editor. Este acceso es público: cualquier persona que tenga la URL de la app puede leer los eventos y sus notas, el material/decoración y los nombres asignados. Las políticas y permisos SQL limitan al invitado a lectura; no puede crear ni editar datos. No incluyas notas privadas en los eventos.
 
@@ -82,7 +84,9 @@ supabase/
 ├── migrations/
 │   ├── 20261007000000_save_event_rpc.sql
 │   ├── 20261007020000_guest_read_only_access.sql
-│   └── 20261008000000_catalog_items.sql
+│   ├── 20261008000000_catalog_items.sql
+│   ├── 20261009000000_guest_catalog_item_read.sql
+│   └── 20261010000000_catalog_item_images.sql
 └── schema.sql
 ```
 

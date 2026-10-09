@@ -103,7 +103,7 @@ export default function LoginPage() {
             <p className="text-center text-xs text-muted">
               El acceso de invitado solo permite visualizar eventos.
             </p>
-            <p className="text-center text-xs text-muted">Desarrollado por chemadvp · v1.0.0</p>
+            <p className="text-center text-xs text-muted">Desarrollado por chemadvp · v1.1.0</p>
           </div>
         )}
       </section>
