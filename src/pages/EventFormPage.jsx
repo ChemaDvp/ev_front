@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getEvent, saveEvent } from '../services/eventsService.js';
+import { getCatalogItems } from '../services/catalogService.js';
 import { getWorkers } from '../services/workersService.js';
-
-const emptyItem = () => ({ category: 'material', name: '', quantity: '1', unit: 'unidad' });
 
 export default function EventFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [workers, setWorkers] = useState([]);
+  const [catalogItems, setCatalogItems] = useState([]);
   const [form, setForm] = useState({
     event_type: '',
     location: '',
@@ -22,7 +22,7 @@ export default function EventFormPage() {
   const [workerIds, setWorkerIds] = useState([]);
   const [items, setItems] = useState([]);
   const [eventLoaded, setEventLoaded] = useState(!id);
-  const [workerLoadError, setWorkerLoadError] = useState('');
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -31,17 +31,19 @@ export default function EventFormPage() {
     let active = true;
     async function load() {
       try {
-        const [workersResult, eventResult] = await Promise.allSettled([
+        const [workersResult, catalogResult, eventResult] = await Promise.allSettled([
           getWorkers(),
+          getCatalogItems(),
           id ? getEvent(id) : Promise.resolve(null),
         ]);
         if (!active) return;
 
-        if (workersResult.status === 'fulfilled') {
-          setWorkers(workersResult.value);
-        } else {
-          setWorkerLoadError(`No se pudieron cargar los trabajadores: ${workersResult.reason.message}`);
-        }
+        const loadErrors = [];
+        if (workersResult.status === 'fulfilled') setWorkers(workersResult.value);
+        else loadErrors.push(`No se pudieron cargar los trabajadores: ${workersResult.reason.message}`);
+        if (catalogResult.status === 'fulfilled') setCatalogItems(catalogResult.value);
+        else loadErrors.push(`No se pudo cargar el catálogo: ${catalogResult.reason.message}`);
+        setLoadError(loadErrors.join(' '));
 
         if (id) {
           if (eventResult.status === 'rejected') {
@@ -59,8 +61,12 @@ export default function EventFormPage() {
               notes: result.event.notes || '',
             });
             setWorkerIds(result.workers.map((worker) => worker.id));
-            setItems(result.items.map(({ category, name, quantity, unit }) => ({
-              category, name, quantity: String(quantity), unit,
+            setItems(result.items.map(({ catalog_item_id, category, name, quantity, unit }) => ({
+              category,
+              name,
+              quantity: String(quantity),
+              unit,
+              catalog_item_id,
             })));
             setEventLoaded(true);
           }
@@ -83,6 +89,18 @@ export default function EventFormPage() {
     setWorkerIds((current) => current.includes(workerId)
       ? current.filter((selected) => selected !== workerId)
       : [...current, workerId]);
+  }
+
+  function toggleCatalogItem(catalogItem) {
+    setItems((current) => current.some((item) => item.catalog_item_id === catalogItem.id)
+      ? current.filter((item) => item.catalog_item_id !== catalogItem.id)
+      : [...current, {
+        catalog_item_id: catalogItem.id,
+        category: catalogItem.category,
+        name: catalogItem.name,
+        quantity: '1',
+        unit: catalogItem.unit,
+      }]);
   }
 
   async function handleSubmit(event) {
@@ -159,25 +177,34 @@ export default function EventFormPage() {
         <section className="form-card space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Material y decoración</h2>
-            <button className="button-secondary" type="button" onClick={() => setItems((current) => [...current, emptyItem()])}>
-              Añadir
-            </button>
           </div>
-          {items.length === 0 && <p className="text-sm text-muted">No hay elementos añadidos.</p>}
-          {items.map((item, index) => (
-            <div className="grid gap-2 rounded-2xl bg-paper p-3 sm:grid-cols-6" key={index}>
-              <select className="field sm:col-span-2" aria-label="Categoría" value={item.category} onChange={(e) => updateItem(setItems, index, 'category', e.target.value)}>
-                <option value="material">Material</option>
-                <option value="decoration">Decoración</option>
-              </select>
-              <input className="field sm:col-span-2" aria-label="Nombre" placeholder="Nombre" required value={item.name} onChange={(e) => updateItem(setItems, index, 'name', e.target.value)} />
-              <input className="field" aria-label="Cantidad" type="number" min="0.01" step="0.01" required value={item.quantity} onChange={(e) => updateItem(setItems, index, 'quantity', e.target.value)} />
-              <div className="flex gap-2 sm:col-span-6">
-                <input className="field" aria-label="Unidad" placeholder="Unidad" value={item.unit} onChange={(e) => updateItem(setItems, index, 'unit', e.target.value)} />
-                <button className="button-secondary text-red-700" type="button" onClick={() => setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))}>Quitar</button>
+          {catalogItems.length === 0 && <p className="text-sm text-muted">Añade primero elementos en la pestaña Catálogo.</p>}
+          {['material', 'decoration'].map((category) => {
+            const categoryItems = catalogItems.filter((item) => item.category === category);
+            if (!categoryItems.length) return null;
+            return (
+              <div className="space-y-2" key={category}>
+                <h3 className="text-sm font-medium text-muted">{category === 'material' ? 'Material' : 'Decoración'}</h3>
+                {categoryItems.map((catalogItem) => {
+                  const selectedItem = items.find((item) => item.catalog_item_id === catalogItem.id);
+                  return (
+                    <div className="rounded-2xl bg-paper p-3" key={catalogItem.id}>
+                      <label className="flex min-h-10 items-center gap-3 text-sm">
+                        <input type="checkbox" checked={Boolean(selectedItem)} onChange={() => toggleCatalogItem(catalogItem)} />
+                        <span>{catalogItem.name}</span>
+                      </label>
+                      {selectedItem && (
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          <input className="field" aria-label={`Cantidad de ${catalogItem.name}`} type="number" min="0.01" step="0.01" required value={selectedItem.quantity} onChange={(e) => updateItem(setItems, items.indexOf(selectedItem), 'quantity', e.target.value)} />
+                          <input className="field" aria-label={`Unidad de ${catalogItem.name}`} value={selectedItem.unit} onChange={(e) => updateItem(setItems, items.indexOf(selectedItem), 'unit', e.target.value)} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </section>
 
         <section className="form-card">
@@ -185,12 +212,12 @@ export default function EventFormPage() {
             <textarea className="field min-h-28 py-3" value={form.notes} onChange={(e) => updateForm('notes', e.target.value)} />
           </Field>
         </section>
-        {(error || workerLoadError) && (
+        {(error || loadError) && (
           <p className="rounded-2xl bg-red-50 p-4 text-sm text-red-800">
-            {[error, workerLoadError].filter(Boolean).join(' ')}
+            {[error, loadError].filter(Boolean).join(' ')}
           </p>
         )}
-        <button className="button-primary" disabled={saving || Boolean(workerLoadError)}>
+        <button className="button-primary" disabled={saving || Boolean(loadError)}>
           {saving ? 'Guardando...' : 'Guardar evento'}
         </button>
       </form>

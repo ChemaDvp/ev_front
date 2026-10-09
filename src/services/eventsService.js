@@ -3,11 +3,14 @@ import { supabase } from './supabaseClient.js';
 export async function getEvents() {
   const { data, error } = await supabase
     .from('events')
-    .select('id, event_type, location, event_date, start_time, end_time')
+    .select('id, event_type, location, event_date, start_time, end_time, event_workers(workers(name))')
     .order('event_date', { ascending: true })
     .order('start_time', { ascending: true });
   if (error) throw error;
-  return data;
+  return data.map((event) => ({
+    ...event,
+    workers: (event.event_workers || []).map(({ workers }) => workers).filter(Boolean),
+  }));
 }
 
 export async function getEvent(id) {
@@ -18,7 +21,7 @@ export async function getEvent(id) {
       .eq('id', id)
       .maybeSingle(),
     supabase.from('event_workers').select('workers(id, name)').eq('event_id', id),
-    supabase.from('event_items').select('id, category, name, quantity, unit').eq('event_id', id),
+    supabase.from('event_items').select('id, catalog_item_id, category, name, quantity, unit').eq('event_id', id),
   ]);
   if (eventResult.error) throw eventResult.error;
   if (workersResult.error) throw workersResult.error;
@@ -38,6 +41,7 @@ export async function saveEvent(eventId, values) {
     p_worker_ids: workerIds,
     p_items: items.filter((item) => item.name.trim()).map((item) => ({
       ...item,
+      catalog_item_id: item.catalog_item_id || null,
       name: item.name.trim(),
       quantity: Number(item.quantity),
       unit: item.unit.trim() || 'unidad',

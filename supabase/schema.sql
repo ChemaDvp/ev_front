@@ -50,9 +50,20 @@ create table if not exists public.event_workers (
   primary key (event_id, worker_id)
 );
 
+create table if not exists public.catalog_items (
+  id uuid primary key default gen_random_uuid(),
+  category public.event_item_category not null,
+  name text not null,
+  unit text not null default 'unidad',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (category, name, unit)
+);
+
 create table if not exists public.event_items (
   id uuid primary key default gen_random_uuid(),
   event_id uuid not null references public.events (id) on delete cascade,
+  catalog_item_id uuid references public.catalog_items (id) on delete restrict,
   category public.event_item_category not null,
   name text not null,
   quantity numeric(10, 2) not null default 1 check (quantity > 0),
@@ -80,6 +91,8 @@ create index if not exists event_workers_worker_id_idx
   on public.event_workers (worker_id);
 create index if not exists event_items_event_id_idx
   on public.event_items (event_id);
+create index if not exists event_items_catalog_item_id_idx
+  on public.event_items (catalog_item_id);
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -142,6 +155,9 @@ create trigger set_workers_updated_at before update on public.workers
 drop trigger if exists set_event_items_updated_at on public.event_items;
 create trigger set_event_items_updated_at before update on public.event_items
   for each row execute function public.set_updated_at();
+drop trigger if exists set_catalog_items_updated_at on public.catalog_items;
+create trigger set_catalog_items_updated_at before update on public.catalog_items
+  for each row execute function public.set_updated_at();
 drop trigger if exists set_stock_items_updated_at on public.stock_items;
 create trigger set_stock_items_updated_at before update on public.stock_items
   for each row execute function public.set_updated_at();
@@ -151,6 +167,7 @@ alter table public.events enable row level security;
 alter table public.workers enable row level security;
 alter table public.event_workers enable row level security;
 alter table public.event_items enable row level security;
+alter table public.catalog_items enable row level security;
 alter table public.stock_items enable row level security;
 
 drop policy if exists "Users can read their own profile or admins can read all"
@@ -180,6 +197,11 @@ create policy "Admins can manage event items"
   on public.event_items for all to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
+drop policy if exists "Admins can manage catalog items" on public.catalog_items;
+create policy "Admins can manage catalog items"
+  on public.catalog_items for all to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()));
 drop policy if exists "Guests can read all events" on public.events;
 create policy "Guests can read all events"
   on public.events for select to anon
@@ -207,7 +229,8 @@ grant usage on schema public to authenticated;
 grant usage on type public.app_role, public.event_item_category to authenticated;
 grant select on public.profiles to authenticated;
 grant select, insert, update, delete on
-  public.events, public.event_workers, public.event_items, public.stock_items
+  public.events, public.event_workers, public.event_items, public.stock_items,
+  public.catalog_items
   to authenticated;
 grant select (id, name), insert, update, delete on public.workers to authenticated;
 grant usage on schema public to anon;

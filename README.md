@@ -30,9 +30,14 @@ La aplicación usa `HashRouter` y rutas de assets relativas para GitHub Pages.
 - El administrador inicia sesión con correo y contraseña; el botón **Entrar como invitado** permite consultar la lista completa y el detalle sin credenciales.
 - Creación, edición y eliminación de eventos con trabajadores, material, decoración y notas.
 - Gestión de trabajadores y asignación N:M a eventos por parte del administrador.
+- Catálogo reutilizable de material y decoración, asignable a eventos con cantidades y unidades.
+- Modo oscuro persistente con control en la barra superior.
+- La pantalla de acceso identifica al desarrollador `chemadvp` y la versión `v1.0.0`.
 - Stock aparece deshabilitado en la navegación de administración con el aviso «Próximamente».
 
 Al editar un evento, las asignaciones y elementos se guardan en una transacción PostgreSQL mediante una función RPC. Como el esquema inicial ya está aplicado en tu proyecto, ejecuta también [`supabase/migrations/20261007000000_save_event_rpc.sql`](supabase/migrations/20261007000000_save_event_rpc.sql) en SQL Editor antes de usar los formularios.
+
+En un proyecto Supabase aún sin esquema, ejecuta primero [`supabase/schema.sql`](supabase/schema.sql), después [`supabase/migrations/20261007000000_save_event_rpc.sql`](supabase/migrations/20261007000000_save_event_rpc.sql) y [`supabase/migrations/20261007020000_guest_read_only_access.sql`](supabase/migrations/20261007020000_guest_read_only_access.sql), y finalmente [`supabase/migrations/20261008000000_catalog_items.sql`](supabase/migrations/20261008000000_catalog_items.sql). En un proyecto existente que ya tenga el esquema base y las dos primeras migraciones, ejecuta solo la migración del catálogo. Esta conserva y añade al catálogo los elementos ya asociados a eventos.
 
 Para habilitar el acceso de invitado sin autenticación en el proyecto existente, ejecuta [`supabase/migrations/20261007020000_guest_read_only_access.sql`](supabase/migrations/20261007020000_guest_read_only_access.sql) en SQL Editor. Este acceso es público: cualquier persona que tenga la URL de la app puede leer los eventos y sus notas, el material/decoración y los nombres asignados. Las políticas y permisos SQL limitan al invitado a lectura; no puede crear ni editar datos. No incluyas notas privadas en los eventos.
 
@@ -42,7 +47,7 @@ El workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) compi
 
 ## Esquema de Supabase
 
-Ejecuta [`supabase/schema.sql`](supabase/schema.sql) en el SQL Editor de Supabase. El esquema crea perfiles vinculados a Supabase Auth, eventos, trabajadores, asignaciones N:M, material/decoración por evento y la tabla de stock preparada para una futura activación.
+Ejecuta [`supabase/schema.sql`](supabase/schema.sql) en el SQL Editor de Supabase. El esquema crea perfiles vinculados a Supabase Auth, eventos, trabajadores, asignaciones N:M, el catálogo de material/decoración y sus asignaciones a eventos, además de la tabla de stock preparada para una futura activación.
 
 El perfil del administrador debe tener rol `admin`; promueve la cuenta propietaria ejecutando el `UPDATE` comentado al final del script con su correo real. El alta de trabajadores en la app solo crea nombres para las asignaciones y no crea cuentas Auth.
 
@@ -64,18 +69,21 @@ src/
 │   ├── EventDetailPage.jsx
 │   ├── EventFormPage.jsx
 │   ├── WorkersPage.jsx
+│   ├── CatalogPage.jsx
 │   └── StockPage.jsx
 ├── services/
 │   ├── supabaseClient.js
 │   ├── eventsService.js
-│   └── workersService.js
+│   ├── workersService.js
+│   └── catalogService.js
 ├── App.jsx
 └── main.jsx
 supabase/
 ├── migrations/
 │   ├── 20261007000000_save_event_rpc.sql
-│   └── 20261007020000_guest_read_only_access.sql
+│   ├── 20261007020000_guest_read_only_access.sql
+│   └── 20261008000000_catalog_items.sql
 └── schema.sql
 ```
 
-Las rutas `/events/new`, `/events/:id/edit`, `/workers` y `/stock` están protegidas para administradores; un invitado que acceda directamente recibe `No tienes permiso para poder visualizar esta información`. Stock aparece como opción deshabilitada «Próximamente» en la navegación del administrador.
+Las rutas `/events/new`, `/events/:id/edit`, `/workers`, `/catalog` y `/stock` están protegidas para administradores; un invitado que acceda directamente recibe `No tienes permiso para poder visualizar esta información`. Stock aparece como opción deshabilitada «Próximamente» en la navegación del administrador.

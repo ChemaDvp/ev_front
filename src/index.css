@@ -25,7 +25,6 @@
   .field {
     @apply block min-h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 text-base text-ink outline-none transition focus:border-olive focus:ring-2 focus:ring-olive/20;
   }
-
   .button-primary {
     @apply flex min-h-12 w-full items-center justify-center rounded-2xl bg-olive px-5 text-sm font-semibold text-white transition hover:bg-ink disabled:cursor-wait disabled:opacity-60;
   }
@@ -37,6 +36,65 @@
   .form-card {
     @apply rounded-3xl bg-white p-5 shadow-card;
   }
+}
+
+html[data-theme='dark'] {
+  --color-ink: #edf0e9;
+  --color-olive: #59634a;
+  --color-paper: #171b18;
+  --color-muted: #adb3a9;
+  --shadow-card: 0 8px 28px rgba(0, 0, 0, 0.22);
+  color-scheme: dark;
+}
+
+html[data-theme='dark'] body {
+  background-color: var(--color-paper);
+}
+
+html[data-theme='dark'] .bg-white,
+html[data-theme='dark'] [class~='bg-white/95'] {
+  background-color: #222823;
+}
+
+html[data-theme='dark'] .border-stone-200 {
+  border-color: #3a433c;
+}
+
+html[data-theme='dark'] .bg-stone-100 {
+  background-color: #303832;
+}
+
+html[data-theme='dark'] .bg-red-50 {
+  background-color: #422a2a;
+}
+
+html[data-theme='dark'] .text-red-700,
+html[data-theme='dark'] .text-red-800 {
+  color: #ffaaaa;
+}
+
+html[data-theme='dark'] .bg-green-50 {
+  background-color: #24392b;
+}
+
+html[data-theme='dark'] .text-green-800 {
+  color: #a8e1b4;
+}
+
+html[data-theme='dark'] .bg-amber-50 {
+  background-color: #403a27;
+}
+
+html[data-theme='dark'] .text-amber-900 {
+  color: #f2dfa5;
+}
+
+html[data-theme='dark'] .bg-olive {
+  background-color: #59634a;
+}
+
+html[data-theme='dark'] .text-olive {
+  color: #c2d09e;
 }
 @layer base {
   body {

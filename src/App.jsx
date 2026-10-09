@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import BottomNavigation from './components/BottomNavigation.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { useAuth } from './context/AuthContext.jsx';
+import CatalogPage from './pages/CatalogPage.jsx';
 import EventDetailPage from './pages/EventDetailPage.jsx';
 import EventFormPage from './pages/EventFormPage.jsx';
 import EventsPage from './pages/EventsPage.jsx';
@@ -15,6 +16,14 @@ function AppShell({ children }) {
   const { user, role, isGuest, exitGuestMode, error } = useAuth();
   const navigate = useNavigate();
   const [signOutError, setSignOutError] = useState('');
+  const [theme, setTheme] = useState(() => (
+    window.localStorage.getItem('ev-theme') === 'dark' ? 'dark' : 'light'
+  ));
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem('ev-theme', theme);
+  }, [theme]);
 
   async function handleSignOut() {
     if (isGuest) {
@@ -37,24 +46,35 @@ function AppShell({ children }) {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      {(user || isGuest) && (
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-5 pt-4">
-          <Link className="text-sm font-semibold text-olive" to="/events">EV</Link>
-          <div className="flex items-center gap-3">
-            <span className="text-xs capitalize text-muted">{isGuest ? 'invitado' : role || 'cargando perfil'}</span>
-            <button className="text-sm font-medium text-olive" onClick={handleSignOut}>
-              {isGuest ? 'Salir' : 'Cerrar sesión'}
-            </button>
-          </div>
-        </div>
-      )}
+      <div className="mx-auto flex max-w-2xl items-center justify-between px-5 pt-4">
+        {user || isGuest ? (
+          <>
+            <Link className="text-sm font-semibold text-olive" to="/events">EV</Link>
+            <div className="flex items-center gap-3">
+              <span className="text-xs capitalize text-muted">{isGuest ? 'invitado' : role || 'cargando perfil'}</span>
+              <button className="text-sm font-medium text-olive" onClick={handleSignOut}>
+                {isGuest ? 'Salir' : 'Cerrar sesión'}
+              </button>
+            </div>
+          </>
+        ) : <span aria-hidden="true" />}
+        <button
+          className="button-secondary min-h-9 px-3"
+          type="button"
+          aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
+          aria-pressed={theme === 'dark'}
+          onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
+        >
+          {theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro'}
+        </button>
+      </div>
       {error && (
         <p className="mx-auto mt-3 max-w-2xl rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p>
       )}
       {signOutError && (
         <p className="mx-auto mt-3 max-w-2xl rounded-xl bg-red-50 p-3 text-sm text-red-800">{signOutError}</p>
       )}
-      <main className={`px-5 pt-6 ${user || isGuest ? 'pb-28' : 'pb-10'}`}>{children}</main>
+      <main className={`px-5 pt-4 ${user || isGuest ? 'pb-28' : 'pb-10'}`}>{children}</main>
       {(user || isGuest) && <BottomNavigation role={role} />}
     </div>
   );
@@ -85,6 +105,7 @@ export default function App() {
         <Route path="/events/:id/edit" element={<ProtectedRoute adminOnly><EventFormPage /></ProtectedRoute>} />
         <Route path="/events/:id" element={<ProtectedRoute><EventDetailPage /></ProtectedRoute>} />
         <Route path="/workers" element={<ProtectedRoute adminOnly><WorkersPage /></ProtectedRoute>} />
+        <Route path="/catalog" element={<ProtectedRoute adminOnly><CatalogPage /></ProtectedRoute>} />
         <Route path="/stock" element={<ProtectedRoute adminOnly><StockPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/events" replace />} />
       </Routes>

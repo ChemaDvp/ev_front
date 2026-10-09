@@ -70,6 +70,10 @@ export default function EventsPage() {
             <p className="mt-4 text-sm text-muted">
               {item.start_time.slice(0, 5)}–{item.end_time.slice(0, 5)}
             </p>
+            <p className="mt-2 text-sm text-muted">
+              <span className="font-medium text-ink">Trabajadores: </span>
+              {item.workers.length ? item.workers.map((worker) => worker.name).join(', ') : 'Sin trabajadores asignados'}
+            </p>
           </Link>
         ))}
       </div>
