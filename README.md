@@ -34,7 +34,8 @@ La aplicación usa `HashRouter` y rutas de assets relativas para GitHub Pages.
 - El catálogo permite adjuntar imágenes privadas (máximo 5 MB), visibles solo en su listado para administradores.
 - El menú móvil usa iconos centrados con etiquetas accesibles.
 - Modo oscuro persistente con control en la barra superior.
-- La pantalla de acceso identifica al desarrollador `chemadvp` y la versión `v1.1.0`.
+- Separación automática de eventos próximos y realizados en la pantalla de eventos, según la fecha y hora de finalización.
+- La pantalla de acceso identifica al desarrollador `chemadvp` y la versión `v1.2.0`.
 - Stock aparece deshabilitado en la navegación de administración con el aviso «Próximamente».
 
 Al editar un evento, las asignaciones y elementos se guardan en una transacción PostgreSQL mediante una función RPC. Como el esquema inicial ya está aplicado en tu proyecto, ejecuta también [`supabase/migrations/20261007000000_save_event_rpc.sql`](supabase/migrations/20261007000000_save_event_rpc.sql) en SQL Editor antes de usar los formularios.

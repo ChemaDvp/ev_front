@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getEvents } from '../services/eventsService.js';
@@ -11,11 +11,29 @@ function formatDate(date) {
   }).format(new Date(`${date}T12:00:00`));
 }
 
+function getEventEndTimestamp(event) {
+  return new Date(`${event.event_date}T${event.end_time.slice(0, 5)}:00`).getTime();
+}
+
 export default function EventsPage() {
   const { role } = useAuth();
   const [events, setEvents] = useState([]);
+  const [selectedList, setSelectedList] = useState('upcoming');
+  const [now, setNow] = useState(() => Date.now());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const { upcomingEvents, completedEvents } = useMemo(() => {
+    const upcoming = [];
+    const completed = [];
+    for (const event of events) {
+      (getEventEndTimestamp(event) <= now ? completed : upcoming).push(event);
+    }
+    completed.sort((first, second) => (
+      getEventEndTimestamp(second) - getEventEndTimestamp(first)
+    ));
+    return { upcomingEvents: upcoming, completedEvents: completed };
+  }, [events, now]);
 
   useEffect(() => {
     let active = true;
@@ -27,6 +45,13 @@ export default function EventsPage() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    const refreshTime = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(refreshTime);
+  }, []);
+
+  const visibleEvents = selectedList === 'upcoming' ? upcomingEvents : completedEvents;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -43,6 +68,32 @@ export default function EventsPage() {
       </header>
       {loading && <p className="py-8 text-center text-muted">Cargando eventos...</p>}
       {error && <p className="rounded-2xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
+      {!loading && !error && (
+        <div className="mb-5 grid grid-cols-2 rounded-2xl bg-stone-100 p-1" role="tablist" aria-label="Listas de eventos">
+          <button
+            className={`min-h-11 rounded-xl px-3 text-sm font-medium transition ${
+              selectedList === 'upcoming' ? 'bg-white text-ink shadow-sm' : 'text-muted'
+            }`}
+            type="button"
+            role="tab"
+            aria-selected={selectedList === 'upcoming'}
+            onClick={() => setSelectedList('upcoming')}
+          >
+            Próximos ({upcomingEvents.length})
+          </button>
+          <button
+            className={`min-h-11 rounded-xl px-3 text-sm font-medium transition ${
+              selectedList === 'completed' ? 'bg-white text-ink shadow-sm' : 'text-muted'
+            }`}
+            type="button"
+            role="tab"
+            aria-selected={selectedList === 'completed'}
+            onClick={() => setSelectedList('completed')}
+          >
+            Realizados ({completedEvents.length})
+          </button>
+        </div>
+      )}
       {!loading && !error && events.length === 0 && (
         <div className="rounded-3xl bg-white p-6 text-center shadow-card">
           <p className="font-medium text-ink">Todavía no hay eventos</p>
@@ -51,8 +102,20 @@ export default function EventsPage() {
           </p>
         </div>
       )}
+      {!loading && !error && events.length > 0 && visibleEvents.length === 0 && (
+        <div className="rounded-3xl bg-white p-6 text-center shadow-card">
+          <p className="font-medium text-ink">
+            {selectedList === 'upcoming' ? 'No hay eventos próximos' : 'Todavía no hay eventos realizados'}
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            {selectedList === 'upcoming'
+              ? 'Los eventos aparecerán aquí hasta que finalice su hora.'
+              : 'Los eventos pasarán aquí automáticamente al terminar.'}
+          </p>
+        </div>
+      )}
       <div className="space-y-3">
-        {events.map((item) => (
+        {visibleEvents.map((item) => (
           <Link
             className="block rounded-3xl bg-white p-5 shadow-card transition hover:-translate-y-0.5"
             key={item.id}
