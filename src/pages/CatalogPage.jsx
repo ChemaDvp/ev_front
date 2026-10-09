@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { deleteCatalogItem, getCatalogItems, saveCatalogItem } from '../services/catalogService.js';
 
-const blankItem = { category: 'material', name: '', unit: 'unidad' };
+const blankItem = { category: 'material', name: '' };
 
 export default function CatalogPage() {
   const [items, setItems] = useState([]);
@@ -27,7 +27,7 @@ export default function CatalogPage() {
 
   function startEdit(item) {
     setEditingId(item.id);
-    setForm({ category: item.category, name: item.name, unit: item.unit });
+    setForm({ category: item.category, name: item.name });
     setNotice('');
   }
 
@@ -45,7 +45,6 @@ export default function CatalogPage() {
       await saveCatalogItem(editingId, {
         ...form,
         name: form.name.trim(),
-        unit: form.unit.trim() || 'unidad',
       });
       resetForm();
       await refresh();
@@ -89,10 +88,6 @@ export default function CatalogPage() {
           Nombre
           <input className="field" required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
         </label>
-        <label className="block space-y-2 text-sm font-medium">
-          Unidad habitual
-          <input className="field" value={form.unit} onChange={(event) => setForm({ ...form, unit: event.target.value })} placeholder="unidad, caja, metros..." />
-        </label>
         <div className="flex gap-2">
           <button className="button-primary" disabled={saving}>{saving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Añadir al catálogo'}</button>
           {editingId && <button className="button-secondary" type="button" onClick={resetForm}>Cancelar</button>}
@@ -109,7 +104,7 @@ export default function CatalogPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="font-semibold">{item.name}</h3>
-                <p className="mt-1 text-sm capitalize text-muted">{item.category === 'decoration' ? 'Decoración' : 'Material'} · {item.unit}</p>
+                <p className="mt-1 text-sm capitalize text-muted">{item.category === 'decoration' ? 'Decoración' : 'Material'}</p>
               </div>
               <button className="text-sm font-medium text-olive" onClick={() => startEdit(item)}>Editar</button>
             </div>

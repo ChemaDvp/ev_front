@@ -64,7 +64,7 @@ export default function EventFormPage() {
             setItems(result.items.map(({ catalog_item_id, category, name, quantity, unit }) => ({
               category,
               name,
-              quantity: String(quantity),
+              quantity: String(Number(quantity)),
               unit,
               catalog_item_id,
             })));
@@ -194,9 +194,23 @@ export default function EventFormPage() {
                         <span>{catalogItem.name}</span>
                       </label>
                       {selectedItem && (
-                        <div className="mt-2 grid grid-cols-2 gap-2">
-                          <input className="field" aria-label={`Cantidad de ${catalogItem.name}`} type="number" min="0.01" step="0.01" required value={selectedItem.quantity} onChange={(e) => updateItem(setItems, items.indexOf(selectedItem), 'quantity', e.target.value)} />
-                          <input className="field" aria-label={`Unidad de ${catalogItem.name}`} value={selectedItem.unit} onChange={(e) => updateItem(setItems, items.indexOf(selectedItem), 'unit', e.target.value)} />
+                        <div className="mt-2">
+                          <label className="block space-y-2 text-sm font-medium">
+                            Cantidad
+                            <select
+                              className="field"
+                              aria-label={`Cantidad de ${catalogItem.name}`}
+                              value={String(selectedItem.quantity)}
+                              onChange={(e) => updateItem(setItems, items.indexOf(selectedItem), 'quantity', e.target.value)}
+                            >
+                              {(!Number.isInteger(Number(selectedItem.quantity)) || Number(selectedItem.quantity) < 1 || Number(selectedItem.quantity) > 99) && (
+                                <option value={String(selectedItem.quantity)}>{selectedItem.quantity} (actual)</option>
+                              )}
+                              {Array.from({ length: 99 }, (_, index) => index + 1).map((quantity) => (
+                                <option key={quantity} value={String(quantity)}>{quantity}</option>
+                              ))}
+                            </select>
+                          </label>
                         </div>
                       )}
                     </div>

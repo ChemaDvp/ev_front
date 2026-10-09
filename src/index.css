@@ -60,6 +60,19 @@ html[data-theme='dark'] .border-stone-200 {
   border-color: #3a433c;
 }
 
+html[data-theme='dark'] input.field,
+html[data-theme='dark'] select.field,
+html[data-theme='dark'] textarea.field {
+  background-color: #303832;
+  color: #edf0e9;
+}
+
+html[data-theme='dark'] input.field::placeholder,
+html[data-theme='dark'] textarea.field::placeholder {
+  color: #adb3a9;
+  opacity: 1;
+}
+
 html[data-theme='dark'] .bg-stone-100 {
   background-color: #303832;
 }

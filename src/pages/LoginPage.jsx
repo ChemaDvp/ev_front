@@ -51,7 +51,6 @@ export default function LoginPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-olive">Eventos Vidal</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink">Bienvenido</h1>
           <p className="mt-2 text-sm text-muted">Accede como administrador o consulta los eventos como invitado.</p>
-          <p className="mt-4 text-xs text-muted">Desarrollado por chemadvp · v1.0.0</p>
         </div>
         {!isSupabaseConfigured ? (
           <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
@@ -104,6 +103,7 @@ export default function LoginPage() {
             <p className="text-center text-xs text-muted">
               El acceso de invitado solo permite visualizar eventos.
             </p>
+            <p className="text-center text-xs text-muted">Desarrollado por chemadvp · v1.0.0</p>
           </div>
         )}
       </section>

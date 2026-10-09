@@ -30,7 +30,7 @@ La aplicación usa `HashRouter` y rutas de assets relativas para GitHub Pages.
 - El administrador inicia sesión con correo y contraseña; el botón **Entrar como invitado** permite consultar la lista completa y el detalle sin credenciales.
 - Creación, edición y eliminación de eventos con trabajadores, material, decoración y notas.
 - Gestión de trabajadores y asignación N:M a eventos por parte del administrador.
-- Catálogo reutilizable de material y decoración, asignable a eventos con cantidades y unidades.
+- Catálogo reutilizable de material y decoración; cada elemento se define por categoría y nombre, y su cantidad (de 1 a 99) se selecciona al asignarlo al evento.
 - Modo oscuro persistente con control en la barra superior.
 - La pantalla de acceso identifica al desarrollador `chemadvp` y la versión `v1.0.0`.
 - Stock aparece deshabilitado en la navegación de administración con el aviso «Próximamente».
