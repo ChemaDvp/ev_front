@@ -37,7 +37,8 @@ grant select (id, event_type, location, event_date, start_time, end_time, notes)
   on public.events to anon;
 grant select (event_id, worker_id) on public.event_workers to anon;
 grant select (id, name) on public.workers to anon;
-grant select (id, event_id, category, name, quantity, unit) on public.event_items to anon;
+grant select (id, event_id, catalog_item_id, category, name, quantity, unit)
+  on public.event_items to anon;
 
 drop function if exists public.is_worker();
 drop function if exists public.can_view_event(uuid);

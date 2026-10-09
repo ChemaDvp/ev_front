@@ -45,6 +45,7 @@ create policy "Admins can manage catalog items"
   with check ((select public.is_admin()));
 
 grant select, insert, update, delete on public.catalog_items to authenticated;
+grant select (catalog_item_id) on public.event_items to anon;
 
 create or replace function public.save_event(
   p_event_id uuid,

@@ -240,7 +240,8 @@ grant select (id, event_type, location, event_date, start_time, end_time, notes)
   on public.events to anon;
 grant select (event_id, worker_id) on public.event_workers to anon;
 grant select (id, name) on public.workers to anon;
-grant select (id, event_id, category, name, quantity, unit) on public.event_items to anon;
+grant select (id, event_id, catalog_item_id, category, name, quantity, unit)
+  on public.event_items to anon;
 
 -- Ejecuta manualmente en el SQL Editor tras registrar la cuenta propietaria:
 -- update public.profiles
